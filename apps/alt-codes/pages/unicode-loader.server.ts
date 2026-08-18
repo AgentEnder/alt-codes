@@ -201,6 +201,92 @@ function rangeEntries(start: number, end: number, categoryId: string): Character
   return out;
 }
 
+/**
+ * Ranges whose characters Unicode names ALGORITHMICALLY instead of listing them
+ * one by one in UnicodeData.txt (UAX #44 §4.8, "Name Derivation Rule Prefix
+ * Strings"). `@unicode/.../Names` only carries listed characters, so none of
+ * these ever reach the curated dataset.
+ *
+ * That is the whole reason /symbol/4e2d was a 404 for 中 while /symbol/e9
+ * resolved for é: é is listed, 中 is derived. The CJK & Scripts category is not
+ * empty — it holds 12,900 entries — but it contained zero of the ~92,000 CJK
+ * ideographs, which is the bulk of what a reader would look for.
+ */
+const ALGORITHMIC_NAME_RANGES: ReadonlyArray<
+  readonly [start: number, end: number, prefix: string]
+> = [
+  [0x3400, 0x4dbf, 'CJK UNIFIED IDEOGRAPH'],
+  [0x4e00, 0x9fff, 'CJK UNIFIED IDEOGRAPH'],
+  [0x20000, 0x2a6df, 'CJK UNIFIED IDEOGRAPH'],
+  [0x2a700, 0x2ebef, 'CJK UNIFIED IDEOGRAPH'],
+  [0x2ebf0, 0x2ee5d, 'CJK UNIFIED IDEOGRAPH'],
+  [0x30000, 0x323af, 'CJK UNIFIED IDEOGRAPH'],
+  [0x323b0, 0x3347f, 'CJK UNIFIED IDEOGRAPH'],
+  [0xf900, 0xfa6d, 'CJK COMPATIBILITY IDEOGRAPH'],
+  [0x2f800, 0x2fa1d, 'CJK COMPATIBILITY IDEOGRAPH'],
+  [0x17000, 0x187f7, 'TANGUT IDEOGRAPH'],
+  [0x18d00, 0x18d08, 'TANGUT IDEOGRAPH'],
+  [0x18b00, 0x18cd5, 'KHITAN SMALL SCRIPT CHARACTER'],
+  [0x1b170, 0x1b2fb, 'NUSHU CHARACTER'],
+];
+
+/** Hangul syllables compose their name from jamo rather than from the code point. */
+const HANGUL_BASE = 0xac00;
+const HANGUL_COUNT = 11172;
+const JAMO_LEAD = ['G', 'GG', 'N', 'D', 'DD', 'R', 'M', 'B', 'BB', 'S', 'SS', '', 'J', 'JJ', 'C', 'K', 'T', 'P', 'H'];
+const JAMO_VOWEL = ['A', 'AE', 'YA', 'YAE', 'EO', 'E', 'YEO', 'YE', 'O', 'WA', 'WAE', 'OE', 'YO', 'U', 'WEO', 'WE', 'WI', 'YU', 'EU', 'YI', 'I'];
+const JAMO_TRAIL = ['', 'G', 'GG', 'GS', 'N', 'NJ', 'NH', 'D', 'L', 'LG', 'LM', 'LB', 'LS', 'LT', 'LP', 'LH', 'M', 'B', 'BS', 'S', 'SS', 'NG', 'J', 'C', 'K', 'T', 'P', 'H'];
+
+/** The Unicode name of a code point that is derived rather than listed, or null. */
+function algorithmicName(cp: number): string | null {
+  if (cp >= HANGUL_BASE && cp < HANGUL_BASE + HANGUL_COUNT) {
+    const index = cp - HANGUL_BASE;
+    const lead = Math.floor(index / (21 * 28));
+    const vowel = Math.floor((index % (21 * 28)) / 28);
+    const trail = index % 28;
+    return `HANGUL SYLLABLE ${JAMO_LEAD[lead]}${JAMO_VOWEL[vowel]}${JAMO_TRAIL[trail]}`;
+  }
+  for (const [start, end, prefix] of ALGORITHMIC_NAME_RANGES) {
+    if (cp >= start && cp <= end) {
+      return `${prefix}-${cp.toString(16).toUpperCase().padStart(4, '0')}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * The entry for a code point, curated or derived.
+ *
+ * Prefers the curated dataset, then synthesizes one for anything Unicode has
+ * actually assigned. `versionForCodePoint` IS the assignment test — it returns
+ * null for an unassigned code point — so a genuinely undefined code point still
+ * gets no entry and callers still 404.
+ *
+ * Both the symbol page and the social-card handler go through here so they
+ * cannot disagree about what exists. Before this, /symbol and /og both answered
+ * 404 for every CJK ideograph and every Hangul syllable — the deleted /glyph
+ * route used to cover them by never looking anything up at all.
+ */
+export function resolveEntry(codePoints: number[]): CharacterEntry | null {
+  const curated = loadUnicodeData().byCodePoints.get(codePointsKey(codePoints));
+  if (curated) return curated;
+  if (codePoints.length !== 1) return null;
+
+  const cp = codePoints[0];
+  if (!versionForCodePoint(cp)) return null;
+
+  const entry = makeEntry(cp, categoryForGeneralCategory('Lo'));
+
+  // The derived name WINS over whatever `makeEntry` found. For these ranges the
+  // Names data carries only a generic block label — every one of the ~92,000
+  // CJK ideographs comes back as "CJK Ideograph" — whereas the derived form is
+  // the character's actual Unicode name ("CJK UNIFIED IDEOGRAPH-4E2D",
+  // "HANGUL SYLLABLE HAN"), which is what a reader searched for.
+  const derived = algorithmicName(cp);
+  if (derived) return { ...entry, name: derived };
+  return entry.name ? entry : null;
+}
+
 let _cachedData: UnicodeData | null = null;
 
 export function loadUnicodeData(): UnicodeData {

@@ -15,14 +15,13 @@
 import {
   CATEGORIES,
   type CharacterEntry,
-  codePointsKey,
   parseSymbolSlug,
   toSymbolSlug,
 } from '../unicode-data';
 import { OG_CARD_VERSION, parseOgCardPath } from '../og/card-url';
 import { FontSourceUnavailableError } from '../og/font-source';
 import { initResvg, initSatori, renderGlyphCard, type WasmInput } from '../og/render';
-import { loadUnicodeData } from '../../pages/unicode-loader.server';
+import { resolveEntry } from '../../pages/unicode-loader.server';
 import type { EdgeExecutionContext } from './html-cache';
 import { type OgCacheBucket, serveCachedPng } from './og-cache';
 
@@ -92,7 +91,9 @@ async function answer(
   slug: string,
   wasm: OgWasm,
 ): Promise<Response> {
-  const entry = loadUnicodeData().byCodePoints.get(codePointsKey(parseSymbolSlug(slug)));
+  // Shares `resolveEntry` with the symbol page so a card cannot exist for a URL
+  // the page 404s, or vice versa — both used to 404 on all CJK and Hangul.
+  const entry = resolveEntry(parseSymbolSlug(slug));
   // Not an error: an unassigned code point is simply not a glyph we have a card for. `no-store`
   // because a Unicode version bump can turn this into a real answer without a redeploy of the
   // thing that cached it.

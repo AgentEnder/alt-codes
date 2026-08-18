@@ -2,6 +2,7 @@ import type { PageContextServer } from 'vike/types';
 import { render } from 'vike/abort';
 import type { CharacterEntry, EncodingInfo } from '../../../src/unicode-data';
 import { parseSymbolSlug, codePointsKey, CATEGORIES } from '../../../src/unicode-data';
+import { resolveEntry } from '../../unicode-loader.server';
 import { getEncodingInfo } from '../../../src/encoding';
 
 export type SymbolData = {
@@ -40,9 +41,13 @@ function relatedScore(candidate: CharacterEntry, keywords: string[], firstCodePo
 export async function data(pageContext: PageContextServer): Promise<SymbolData> {
   const codePoints = parseSymbolSlug(pageContext.routeParams.hexOrSlugifiedName);
   const key = codePointsKey(codePoints);
-  const { byCodePoints, byCategory, characters } = pageContext.globalContext.unicodeData;
+  const { byCategory, characters } = pageContext.globalContext.unicodeData;
 
-  const entry = byCodePoints.get(key);
+  // Curated first, then derived. Unicode names the ~92,000 CJK ideographs and the
+  // 11,172 Hangul syllables algorithmically rather than listing them, so they are
+  // absent from the dataset and a plain `byCodePoints` lookup 404s every one of
+  // them. An unassigned code point still resolves to null and still 404s.
+  const entry = resolveEntry(codePoints);
   // A slug that resolves to no glyph is a 404, not a 500 — see pages/_error.
   if (!entry) throw render(404, `No glyph at ${key}.`);
 
