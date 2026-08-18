@@ -21,7 +21,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "resolveJsonModule": true,
-    "types": ["vite/client", "vike/types"],
+    // `node` is needed by two things that genuinely run in node rather than in
+    // workerd: `+server.ts` reads process.env.PORT for the `prod` entry, and
+    // src/og/render.spec.ts writes a rendered card to disk under vitest. Each
+    // branch built green alone; only the merged tree needed this.
+    "types": ["vite/client", "vike/types", "node"],
     "jsx": "react-jsx"
   },
   // `+server.ts` is in here deliberately: it is the Worker's entry, and Vike's
