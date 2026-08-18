@@ -16,7 +16,8 @@
     "nx": "23.0.0-beta.25",
     "typescript": "~5.9.2",
     "vite": "^8.0.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "wrangler": "^4.123.0"
   },
   "packageManager": "pnpm@11.9.0"
 }
