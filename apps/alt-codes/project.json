@@ -17,7 +17,7 @@
         "build"
       ],
       "options": {
-        "cwd": "apps/alt-codes/dist/server"
+        "cwd": "apps/alt-codes"
       }
     },
     "preview-worker": {

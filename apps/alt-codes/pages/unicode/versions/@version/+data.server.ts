@@ -1,4 +1,5 @@
 import type { PageContextServer } from 'vike/types';
+import { render } from 'vike/abort';
 import { categoryName } from '../../../../src/unicode-data';
 
 export type VersionData = {
@@ -10,7 +11,7 @@ export type VersionData = {
 export async function data(pageContext: PageContextServer): Promise<VersionData> {
   const version = pageContext.routeParams.version;
   const entries = pageContext.globalContext.unicodeData.byVersion.get(version);
-  if (!entries) throw new Error(`Unknown Unicode version: ${version}`);
+  if (!entries) throw render(404, `Unknown Unicode version: ${version}.`);
 
   const counts = new Map<string, number>();
   for (const e of entries) counts.set(e.categoryId, (counts.get(e.categoryId) ?? 0) + 1);

@@ -2,7 +2,7 @@ import { useData } from 'vike-react/useData';
 import { useEffect, useState } from 'react';
 import type { VersionCategoryData } from './+data.server';
 import { SymbolGrid } from '../../../../../src/SymbolGrid';
-import { toSymbolSlug, type GridEntry } from '../../../../../src/unicode-data';
+import type { GridEntry } from '../../../../../src/unicode-data';
 import { withBase } from '../../../../../src/utils';
 import { SearchInput } from '../../../../../src/SearchInput';
 import '../../../../../src/style.css';
@@ -58,16 +58,7 @@ export default function Page() {
         {entries === null ? (
           <div className="empty-state"><p className="empty-title">Loading {count.toLocaleString()} glyphs…</p></div>
         ) : (
-          <SymbolGrid
-            characters={entries}
-            // CJK & Scripts glyphs aren't prerendered — link to the client-only /glyph
-            // viewer (with the slice coordinates) instead of the absent /symbol page.
-            hrefFor={
-              categoryId === 'cjk-scripts'
-                ? (e) => withBase(`/glyph/${toSymbolSlug(e)}?v=${version}&cat=${categoryId}`)
-                : undefined
-            }
-          />
+          <SymbolGrid characters={entries} />
         )}
       </main>
     </div>
