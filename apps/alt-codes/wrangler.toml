@@ -26,6 +26,23 @@ main = "vike:server-entry"
 [assets]
 directory = "./dist/client"
 
+# The lower tier under a social card. `caches.default` sits in front of this, but an edge
+# eviction — or a colo that has never seen the card — must not mean regenerating from scratch:
+# a cold render is up to four third-party font fetches and a wasm rasterise. R2 is what makes
+# an edge miss cost one object read instead.
+#
+# Unlike `caches.default` this is NOT a no-op off the edge, so the lower tier is exercised on
+# workers.dev and under `wrangler dev` well before the custom domain is bound.
+#
+# The bucket has to exist before the first deploy:
+#     wrangler r2 bucket create alt-codes-og-cache
+# Nothing else reads it, and its contents are pure cache — deleting it costs regeneration, not
+# data. The binding is optional in code (see og-handler.ts), which is what lets `vike dev` and
+# `vike preview`, neither of which has bindings at all, still render cards.
+[[r2_buckets]]
+binding = "OG_CACHE"
+bucket_name = "alt-codes-og-cache"
+
 # The custom domain is bound in #795, once the Worker is confirmed serving on
 # workers.dev. Adding it here before then would point live traffic at an app
 # that has never been exercised.
