@@ -1,14 +1,12 @@
-// Restore the real URL after the GitHub Pages 404.html SPA redirect (see
-// craigory-dev/public/404.html). A deep link to a non-prerendered /glyph page lands on
-// "/alt-codes/?/glyph/…"; this rewrites it back to "/alt-codes/glyph/…" via replaceState
-// before Vike's client router reads the URL, so the client-only viewer renders. No-op on
-// normal loads. Inline + synchronous so it runs ahead of the deferred client entry.
-const SPA_REDIRECT_RESTORE = `(function(l){if(l.search[1]==='/'){var d=l.search.slice(1).split('&').map(function(s){return s.replace(/~and~/g,'&')}).join('?');window.history.replaceState(null,null,l.pathname.slice(0,-1)+d+l.hash)}}(window.location))`;
+// The GitHub Pages 404.html SPA-redirect shim that used to live here is gone with
+// the /glyph route it existed for. It rewrote "/alt-codes/?/glyph/…" back to a real
+// path because a deep link to a non-prerendered page could only be reached through
+// Pages' 404 handler. The Worker server-renders every URL, so there is nothing left
+// to restore — and leaving it in would have it rewriting genuine query strings.
 
 export function Head() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: SPA_REDIRECT_RESTORE }} />
       <title>Glyph Index — Unicode & Alt Code Reference</title>
       <meta
         name="description"

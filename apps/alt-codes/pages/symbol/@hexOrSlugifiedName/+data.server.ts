@@ -1,4 +1,5 @@
 import type { PageContextServer } from 'vike/types';
+import { render } from 'vike/abort';
 import type { CharacterEntry, EncodingInfo } from '../../../src/unicode-data';
 import { parseSymbolSlug, codePointsKey, CATEGORIES } from '../../../src/unicode-data';
 import { getEncodingInfo } from '../../../src/encoding';
@@ -42,7 +43,8 @@ export async function data(pageContext: PageContextServer): Promise<SymbolData> 
   const { byCodePoints, byCategory, characters } = pageContext.globalContext.unicodeData;
 
   const entry = byCodePoints.get(key);
-  if (!entry) throw new Error(`No entry for key: ${key}`);
+  // A slug that resolves to no glyph is a 404, not a 500 — see pages/_error.
+  if (!entry) throw render(404, `No glyph at ${key}.`);
 
   const categoryName = CATEGORIES.find(c => c.id === entry.categoryId)?.name ?? entry.categoryId;
   const encoding = getEncodingInfo(entry.codePoints);
