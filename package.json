@@ -1,0 +1,22 @@
+{
+  "name": "@alt-codes/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nx dev alt-codes",
+    "build": "nx build alt-codes",
+    "test": "nx test alt-codes",
+    "typecheck": "nx typecheck alt-codes"
+  },
+  "devDependencies": {
+    "@nx/vite": "23.0.0-beta.25",
+    "@nx/vitest": "23.0.0-beta.25",
+    "nx": "23.0.0-beta.25",
+    "typescript": "~5.9.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
