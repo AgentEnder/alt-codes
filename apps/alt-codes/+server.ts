@@ -1,5 +1,6 @@
 import type { Server } from 'vike/types';
 import vike from 'vike/fetch';
+import { withHtmlCache, type EdgeExecutionContext } from './src/server/html-cache';
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
@@ -15,7 +16,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const renderPage = vike.fetch as unknown as (
   request: Request,
   env: unknown,
-  ctx: unknown,
+  ctx: EdgeExecutionContext | undefined,
 ) => Promise<Response>;
 
 /**
@@ -28,12 +29,13 @@ const renderPage = vike.fetch as unknown as (
  *
  * There is no Hono app here. This app is read-only and anonymous — no API
  * routes, no auth, no cron — so it needs neither a router nor a `scheduled`
- * export.
+ * export, and the HTML cache is a plain wrapper rather than middleware.
  *
  * `env` and `ctx` are optional because the Worker runtime supplies them but
  * `vike preview` and the Node prod server do not.
  */
 export default {
-  fetch: (request: Request, env?: unknown, ctx?: unknown) => renderPage(request, env, ctx),
+  fetch: (request: Request, env?: unknown, ctx?: EdgeExecutionContext) =>
+    withHtmlCache(request, ctx, () => renderPage(request, env, ctx)),
   prod: { port },
 } satisfies Server;
