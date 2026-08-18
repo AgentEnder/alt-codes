@@ -3,10 +3,27 @@
   "targets": {
     "test": {
       "executor": "@nx/vitest:test",
-      "outputs": ["{workspaceRoot}/coverage/apps/alt-codes"],
+      "outputs": [
+        "{workspaceRoot}/coverage/apps/alt-codes"
+      ],
       "options": {
         "configFile": "apps/alt-codes/vitest.config.ts",
         "reportsDirectory": "{projectRoot}/../../coverage/apps/alt-codes"
+      }
+    },
+    "deploy": {
+      "command": "wrangler deploy",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "cwd": "apps/alt-codes/dist/server"
+      }
+    },
+    "preview-worker": {
+      "command": "wrangler dev",
+      "options": {
+        "cwd": "apps/alt-codes"
       }
     }
   }

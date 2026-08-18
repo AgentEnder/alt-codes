@@ -1,0 +1,27 @@
+"$schema" = "../../node_modules/wrangler/config-schema.json"
+
+# This file is read by the wrangler CLI and by `@cloudflare/vite-plugin` at
+# build time. The config the Worker is actually DEPLOYED with is generated into
+# `dist/server/wrangler.json` by that plugin, which is why the `deploy` target
+# runs wrangler from there rather than from here.
+
+name = "alt-codes"
+compatibility_date = "2026-08-18"
+# `nodejs_compat` is what lets the Unicode loader's dependencies resolve. It is
+# NOT what makes `createRequire` work — see the loader's own comment; that had to
+# become a static import before any of this could bundle.
+compatibility_flags = ["nodejs_compat"]
+main = "vike:server-entry"
+
+# Static assets are served straight from the edge without waking the Worker.
+# No `run_worker_first` here: unlike npm-burst there are no POST endpoints, and
+# the asset layer only ever needs to answer GET/HEAD for this app.
+[assets]
+directory = "./dist/client"
+
+# The custom domain is bound in #795, once the Worker is confirmed serving on
+# workers.dev. Adding it here before then would point live traffic at an app
+# that has never been exercised.
+# [[routes]]
+# pattern = "alt-codes.craigory.dev"
+# custom_domain = true
