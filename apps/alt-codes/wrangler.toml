@@ -2,10 +2,17 @@
 
 # This file is read by the wrangler CLI and by `@cloudflare/vite-plugin` at
 # build time. The config the Worker is actually DEPLOYED with is generated into
-# `dist/server/wrangler.json` by that plugin, which is why the `deploy` target
-# runs wrangler from there rather than from here.
+# `dist/server/wrangler.json` by that plugin, and the plugin also writes
+# `.wrangler/deploy/config.json` HERE pointing at it. So `wrangler deploy` runs
+# from this directory and is redirected; running it from `dist/server` instead
+# makes wrangler see two configs with different base paths and abort.
 
 name = "alt-codes"
+# Pinned because this login can see two accounts (personal and Elite Wrestling
+# Alliance), and wrangler refuses to guess in a non-interactive shell — CI and
+# any scripted deploy fail with "More than one account available" without it.
+# This is the personal account, the same one npm-burst is deployed to.
+account_id = "a01f8df0a9bbc08fd34c1ca60dd88af1"
 compatibility_date = "2026-08-18"
 # `nodejs_compat` is what lets the Unicode loader's dependencies resolve. It is
 # NOT what makes `createRequire` work — see the loader's own comment; that had to
