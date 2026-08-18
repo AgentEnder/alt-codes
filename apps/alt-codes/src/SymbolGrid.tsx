@@ -23,15 +23,9 @@ function useColumnCount(containerRef: RefObject<HTMLDivElement | null>): number 
 
 /** Virtualized grid of glyph cards — only visible rows hit the DOM, so even the
  *  11k+ Seal characters added in Unicode 18.0 render without exploding the tree.
- *  `hrefFor` overrides each card's link target (defaults to the prerendered
- *  /symbol page); the CJK leaf passes a builder pointing at the client-only /glyph viewer. */
-export function SymbolGrid({
-  characters,
-  hrefFor = (c) => withBase(`/symbol/${toSymbolSlug(c)}`),
-}: {
-  characters: GridEntry[];
-  hrefFor?: (entry: GridEntry) => string;
-}) {
+ *  Every card links to /symbol: the Worker renders those on demand, so the CJK
+ *  bucket no longer needs a separate client-only viewer to link at. */
+export function SymbolGrid({ characters }: { characters: GridEntry[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const columns = useColumnCount(containerRef);
   const rowCount = Math.ceil(characters.length / columns);
@@ -64,7 +58,7 @@ export function SymbolGrid({
               {row.map((c) => (
                 <a
                   key={codePointsKey(c.codePoints)}
-                  href={hrefFor(c)}
+                  href={withBase(`/symbol/${toSymbolSlug(c)}`)}
                   className="char-card"
                   title={[c.name, ...c.aliases, c.hex, presentationNote(c.codePoints), 'click for details'].filter(Boolean).join(' · ')}
                 >

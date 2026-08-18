@@ -2,10 +2,17 @@
 
 # This file is read by the wrangler CLI and by `@cloudflare/vite-plugin` at
 # build time. The config the Worker is actually DEPLOYED with is generated into
-# `dist/server/wrangler.json` by that plugin, which is why the `deploy` target
-# runs wrangler from there rather than from here.
+# `dist/server/wrangler.json` by that plugin, and the plugin also writes
+# `.wrangler/deploy/config.json` HERE pointing at it. So `wrangler deploy` runs
+# from this directory and is redirected; running it from `dist/server` instead
+# makes wrangler see two configs with different base paths and abort.
 
 name = "alt-codes"
+# Pinned because this login can see two accounts (personal and Elite Wrestling
+# Alliance), and wrangler refuses to guess in a non-interactive shell — CI and
+# any scripted deploy fail with "More than one account available" without it.
+# This is the personal account, the same one npm-burst is deployed to.
+account_id = "a01f8df0a9bbc08fd34c1ca60dd88af1"
 compatibility_date = "2026-08-18"
 # `nodejs_compat` is what lets the Unicode loader's dependencies resolve. It is
 # NOT what makes `createRequire` work — see the loader's own comment; that had to
@@ -18,6 +25,23 @@ main = "vike:server-entry"
 # the asset layer only ever needs to answer GET/HEAD for this app.
 [assets]
 directory = "./dist/client"
+
+# The lower tier under a social card. `caches.default` sits in front of this, but an edge
+# eviction — or a colo that has never seen the card — must not mean regenerating from scratch:
+# a cold render is up to four third-party font fetches and a wasm rasterise. R2 is what makes
+# an edge miss cost one object read instead.
+#
+# Unlike `caches.default` this is NOT a no-op off the edge, so the lower tier is exercised on
+# workers.dev and under `wrangler dev` well before the custom domain is bound.
+#
+# The bucket has to exist before the first deploy:
+#     wrangler r2 bucket create alt-codes-og-cache
+# Nothing else reads it, and its contents are pure cache — deleting it costs regeneration, not
+# data. The binding is optional in code (see og-handler.ts), which is what lets `vike dev` and
+# `vike preview`, neither of which has bindings at all, still render cards.
+[[r2_buckets]]
+binding = "OG_CACHE"
+bucket_name = "alt-codes-og-cache"
 
 # The custom domain is bound in #795, once the Worker is confirmed serving on
 # workers.dev. Adding it here before then would point live traffic at an app
